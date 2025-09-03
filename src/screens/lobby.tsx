@@ -1,15 +1,24 @@
 'use client';
-import React from 'react';
-import { useGame } from "@/store/game";
+import { useGame } from '@/store/game';
 
-const LobbyScreen: React.FC = () => {
-	const { gameId } = useGame();
+export default function Lobby() {
+	const { game } = useGame();
+
+	if (!game) return <p>Loading...</p>;
 
 	return (
-		<main>
-			<h1>You a re currently in the lobby of {gameId}</h1>
+		<main style={{ padding: 24 }}>
+			<h1>Game Lobby</h1>
+			<p>
+				<b>Game ID:</b> {game.id}
+			</p>
+			<ul>
+				{[1, 2, 3, 4, 5, 6].map((n) => (
+					<li key={n}>
+						Page {n}: {game[`page${n as 1}`] ? '✅' : '⏳'}
+					</li>
+				))}
+			</ul>
 		</main>
 	);
-};
-
-export default LobbyScreen;
+}

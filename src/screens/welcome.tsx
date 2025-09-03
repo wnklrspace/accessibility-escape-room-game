@@ -1,15 +1,31 @@
 'use client';
-import React from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
+export default function Welcome() {
+	const [loading, setLoading] = useState(false);
+	const r = useRouter();
 
-const WelcomeScreen: React.FC = () => {
+	const start = async () => {
+		setLoading(true);
+		try {
+			const res = await fetch('/api/game/start', { method: 'POST' });
+			const json = await res.json();
+			if (!res.ok) throw new Error(json?.error || 'Failed to start');
+			r.push(json.lobbyUrl);
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	return (
-		<>
-			<h1>Heyo and welcome to the accessibility escape room game!</h1>
-			<p>This is a game by Easy-Web-Check</p>
-			<p>Start a new Game?</p>
-		</>
+		<main style={{ padding: 24 }}>
+			<h1>Welcome</h1>
+			<button
+				onClick={start}
+				disabled={loading}>
+				Start a new game
+			</button>
+		</main>
 	);
-};
-
-export default WelcomeScreen;
+}
