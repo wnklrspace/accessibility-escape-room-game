@@ -17,13 +17,21 @@ export async function POST() {
     return NextResponse.json({ error: error?.message ?? "Failed to create game" }, { status: 400 })
   }
 
-  // persist for same-browser sessions
-  const c = cookies()
-  ;(await c).set("game_id", data.id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60*60*24 })
-  ;(await c).set("game_token", token,   { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60*60*24 })
+  const c = cookies();
+	(await c).set('game_id', data.id, {
+		httpOnly: true,
+		sameSite: 'lax',
+		path: '/',
+		maxAge: 60 * 60 * 24,
+	});
+	(await c).set('game_token', token, {
+		httpOnly: true,
+		sameSite: 'lax',
+		path: '/',
+		maxAge: 60 * 60 * 24,
+	});
 
-  // shareable URL (includes t=)
-  const lobbyUrl = `/game/${data.id}?t=${token}`
+	const lobbyUrl = `/game/${data.id}`;
 
   return NextResponse.json({ gameId: data.id, token, lobbyUrl })
 }

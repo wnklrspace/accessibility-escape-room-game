@@ -27,7 +27,6 @@ interface GameContextValue {
 	game: Game | undefined;
 	loading: boolean;
 	error: Error | undefined;
-
 	refresh: () => Promise<void>;
 	startGame: () => Promise<void>;
 	mark: (page: number) => Promise<void>;
@@ -36,16 +35,14 @@ interface GameContextValue {
 
 const GameContext = createContext<GameContextValue | undefined>(undefined);
 
-// util: normalize to stable key
 const toId = (v: Id | null): Id | null => {
-  if (v == null) return null;
-  if (typeof v === "number") return Number.isFinite(v) ? v : 0;
-  const n = Number.parseInt(String(v), 10);
+	if (v == null) return null;
+	if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+	const n = Number.parseInt(String(v), 10);
 	return Number.isFinite(n) ? n : String(v);
 };
 
 type ProviderProps = {
-	/** optional hint; real id comes from the server cookie after start */
 	gameId?: Id | null;
 	children: React.ReactNode;
 };
@@ -62,11 +59,22 @@ const GameProvider: FC<ProviderProps> = ({ gameId = null, children }) => {
 
 	const key = useMemo(() => String(currentId ?? 'none'), [currentId]);
 
-	const refresh = async () => {
+	const refresh = async (id: Id | null = gameId) => {
 		setLoading(true);
 		setError(undefined);
+
 		try {
-			const res = await fetch('/api/game/state', { cache: 'no-store' });
+			const url =
+				id == null
+					? '/api/game/state'
+					: `/api/game/${encodeURIComponent(String(id))}`;
+
+			const res = await fetch(url, {
+				cache: 'no-store',
+				credentials: 'include', // ensure the cookie goes with the request
+				headers: { Accept: 'application/json' },
+			});
+
 			const json = await res.json();
 			if (!res.ok) throw new Error(json?.error || 'Failed to load game');
 
@@ -88,8 +96,7 @@ const GameProvider: FC<ProviderProps> = ({ gameId = null, children }) => {
 			const res = await fetch('/api/game/start', { method: 'POST' });
 			const json = await res.json();
 			if (!res.ok) throw new Error(json?.error || 'Failed to start game');
-			// cookies set server-side; just refresh to fetch the state
-			await refresh();
+			await refresh(gameId ?? null);
 		} catch (e) {
 			setError(e instanceof Error ? e : new Error('Failed to start game'));
 		} finally {
@@ -112,7 +119,7 @@ const GameProvider: FC<ProviderProps> = ({ gameId = null, children }) => {
 			});
 			const json = await res.json();
 			if (!res.ok) throw new Error(json?.error || 'Failed to update progress');
-			await refresh();
+			await refresh(gameId ?? null);
 		} catch (e) {
 			setError(e instanceof Error ? e : new Error('Failed to update progress'));
 		} finally {
@@ -127,7 +134,7 @@ const GameProvider: FC<ProviderProps> = ({ gameId = null, children }) => {
 			const res = await fetch('/api/game/complete', { method: 'POST' });
 			const json = await res.json();
 			if (!res.ok) throw new Error(json?.error || 'Failed to complete game');
-			await refresh();
+			await refresh(gameId ?? null);
 		} catch (e) {
 			setError(e instanceof Error ? e : new Error('Failed to complete game'));
 		} finally {
@@ -135,10 +142,8 @@ const GameProvider: FC<ProviderProps> = ({ gameId = null, children }) => {
 		}
 	};
 
-	// auto-load on mount & whenever the provided id hint changes
 	useEffect(() => {
-		refresh();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		refresh(gameId ?? null);
 	}, [key]);
 
 	const value = useMemo<GameContextValue>(

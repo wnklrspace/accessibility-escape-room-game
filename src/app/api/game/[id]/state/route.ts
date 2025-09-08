@@ -2,9 +2,10 @@ import { NextResponse } from "next/server"
 import { cookies } from "next/headers"
 import { supabaseServer } from "@/lib/gameServer"
 
-export async function GET() {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   const c = cookies()
-  const id = (await c).get("game_id")?.value
+  const { id } = await params
+  console.log("API: GET /api/game/[id]/state", id)
   const token = (await c).get("game_token")?.value
   if (!id || !token) return NextResponse.json({ game: null })
 
